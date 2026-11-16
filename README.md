@@ -14,6 +14,7 @@ An enterprise financial intelligence and unit-economics dashboard built with Pyt
 - **Executive KPI Scorecards**: Instant visibility into Total Gross Revenue, Operating Expenses, Net Operating Profit, and Average Profit Margins.
 - **Multidimensional Filtering**: Slice financial records across fiscal years (2024, 2025), commercial territories (North, South, East, West), and organizational units (Engineering, Marketing, Operations, Sales, Support).
 - **Time-Series Financial Trajectory**: Interactive trendlines visualizing monthly revenue vs. expense burn rates.
+- **YoY & QoQ Variance Analytics**: Computes annual Year-over-Year (2024 vs. 2025) growth variance across Gross Revenue (+20.27%), Operating Expenses, and Net Profit, coupled with sequential Quarter-over-Quarter (QoQ) growth momentum bars and tabular ledgers.
 - **Predictive Revenue Forecasting**: Implements Ordinary Least Squares (OLS) linear projection to model quarterly revenue trajectory and growth velocity.
 - **Department & Regional Cost Centers**: Compares unit margins and expense distributions to identify high-yield and capital-intensive business divisions.
 - **Data Export & Reporting**: Searchable transaction ledger with one-click filtered CSV export.

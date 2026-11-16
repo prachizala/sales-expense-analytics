@@ -13,7 +13,8 @@ from analytics_engine import (
     filter_records,
     aggregate_by_month,
     aggregate_by_dimension,
-    forecast_next_period
+    forecast_next_period,
+    calculate_period_comparisons
 )
 
 st.set_page_config(
@@ -87,10 +88,11 @@ c5.metric("Transactions", f"{kpis['total_transactions']:,}")
 
 st.markdown("---")
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Revenue vs Expense Trajectory",
     "🏢 Department Unit Economics",
     "🗺️ Regional Performance",
+    "📊 YoY & QoQ Variance Analytics",
     "📑 Detailed Ledger & CSV"
 ])
 
@@ -159,9 +161,68 @@ with tab3:
             st.dataframe(df_reg, use_container_width=True)
 
 # -----------------------------------------------------------------------------
-# TAB 4: RAW LEDGER & EXPORT
+# TAB 4: YOY & QOQ VARIANCE ANALYTICS
 # -----------------------------------------------------------------------------
 with tab4:
+    st.subheader("Year-over-Year (YoY) & Quarter-over-Quarter (QoQ) Growth Variance")
+    st.markdown("Assess multi-period commercial momentum, annual scaling, and quarter-by-quarter volatility.")
+
+    period_stats = calculate_period_comparisons(filtered_records)
+    yoy = period_stats["yoy"]
+    qoq_data = period_stats["qoq"]
+
+    # YoY Metric Highlights (2024 vs 2025)
+    st.markdown("#### 📅 Year-over-Year (YoY: 2024 vs 2025) Performance")
+    y1, y2, y3 = st.columns(3)
+    y1.metric(
+        "FY 2025 Revenue",
+        f"₹{yoy['revenue_2025']:,.2f}",
+        delta=f"{yoy['revenue_growth_pct']:+.2f}% YoY vs FY 2024"
+    )
+    y2.metric(
+        "FY 2025 Operating Expenses",
+        f"₹{yoy['expense_2025']:,.2f}",
+        delta=f"{yoy['expense_growth_pct']:+.2f}% YoY vs FY 2024",
+        delta_color="inverse"
+    )
+    y3.metric(
+        "FY 2025 Net Profit",
+        f"₹{yoy['net_profit_2025']:,.2f}",
+        delta=f"{yoy['profit_growth_pct']:+.2f}% YoY Growth"
+    )
+
+    st.markdown("---")
+    st.markdown("#### 📊 Quarter-over-Quarter (QoQ) Growth Dynamics")
+
+    if qoq_data:
+        df_qoq = pd.DataFrame(qoq_data)
+
+        # Growth bar chart
+        chart_data = df_qoq.dropna(subset=["revenue_growth_pct"]).copy()
+        if not chart_data.empty:
+            st.bar_chart(chart_data.set_index("quarter")["revenue_growth_pct"])
+            st.caption("Quarterly Revenue Growth Rate (%)")
+
+        # Formatted Display Table
+        display_qoq = [
+            {
+                "Quarter": row["quarter"],
+                "Revenue (INR)": f"₹{row['revenue_inr']:,.2f}",
+                "Expense (INR)": f"₹{row['expense_inr']:,.2f}",
+                "Net Profit (INR)": f"₹{row['net_profit_inr']:,.2f}",
+                "Revenue Growth (QoQ)": f"{row['revenue_growth_pct']:+.2f}%" if row['revenue_growth_pct'] is not None else "Baseline",
+                "Profit Growth (QoQ)": f"{row['profit_growth_pct']:+.2f}%" if row['profit_growth_pct'] is not None else "Baseline"
+            }
+            for row in qoq_data
+        ]
+        st.dataframe(pd.DataFrame(display_qoq), use_container_width=True)
+    else:
+        st.info("Insufficient periodic data to calculate quarterly growth comparisons.")
+
+# -----------------------------------------------------------------------------
+# TAB 5: RAW LEDGER & EXPORT
+# -----------------------------------------------------------------------------
+with tab5:
     st.subheader("Filtered Financial Transactions Ledger")
     df_filtered = pd.DataFrame(filtered_records)
     st.dataframe(df_filtered, use_container_width=True)
