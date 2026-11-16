@@ -10,7 +10,8 @@ from analytics_engine import (
     filter_records,
     aggregate_by_month,
     aggregate_by_dimension,
-    forecast_next_period
+    forecast_next_period,
+    calculate_period_comparisons
 )
 
 
@@ -88,6 +89,43 @@ class TestAnalyticsEngine(unittest.TestCase):
         # Step 1 should be 160000, Step 2 should be 180000
         self.assertAlmostEqual(forecast["projected_revenues"][0], 160000.0, places=0)
         self.assertAlmostEqual(forecast["projected_revenues"][1], 180000.0, places=0)
+
+    def test_calculate_period_comparisons_empty(self):
+        res = calculate_period_comparisons([])
+        self.assertEqual(res["yoy"]["revenue_growth_pct"], 0.0)
+        self.assertEqual(len(res["qoq"]), 0)
+
+    def test_calculate_period_comparisons_yoy_and_qoq(self):
+        records = [
+            # 2024-Q1
+            {"date": "2024-01-01", "revenue_inr": 100000.0, "expense_inr": 60000.0},
+            {"date": "2024-02-01", "revenue_inr": 100000.0, "expense_inr": 60000.0},
+            # 2024-Q2
+            {"date": "2024-04-01", "revenue_inr": 220000.0, "expense_inr": 120000.0},
+            # 2025-Q1
+            {"date": "2025-01-01", "revenue_inr": 250000.0, "expense_inr": 150000.0},
+            {"date": "2025-02-01", "revenue_inr": 250000.0, "expense_inr": 150000.0},
+        ]
+        res = calculate_period_comparisons(records)
+
+        # 2024 total rev = 420,000, 2025 total rev = 500,000
+        # YoY growth = (500000 - 420000) / 420000 * 100 = 19.05%
+        self.assertEqual(res["yoy"]["revenue_2024"], 420000.0)
+        self.assertEqual(res["yoy"]["revenue_2025"], 500000.0)
+        self.assertAlmostEqual(res["yoy"]["revenue_growth_pct"], 19.05, places=1)
+
+        # QoQ verification
+        self.assertGreaterEqual(len(res["qoq"]), 2)
+        q1_2024 = res["qoq"][0]
+        self.assertEqual(q1_2024["quarter"], "2024-Q1")
+        self.assertEqual(q1_2024["revenue_inr"], 200000.0)
+        self.assertIsNone(q1_2024["revenue_growth_pct"])  # First quarter has no predecessor
+
+        q2_2024 = res["qoq"][1]
+        self.assertEqual(q2_2024["quarter"], "2024-Q2")
+        self.assertEqual(q2_2024["revenue_inr"], 220000.0)
+        # Growth: (220k - 200k) / 200k = +10.0%
+        self.assertAlmostEqual(q2_2024["revenue_growth_pct"], 10.0, places=1)
 
 
 if __name__ == "__main__":
